@@ -64,9 +64,21 @@ const Index = () => {
         return;
       }
 
+      const voiceMap: { [key: string]: string } = {
+        'indian-female': 'puter-female-in',
+        'indian-female-pure': 'puter-female-in',
+        'indian-male': 'puter-male-in',
+        'british-female': 'puter-female-uk',
+        'british-male': 'puter-male-uk',
+        'american-female': 'puter-female-us',
+        'american-male': 'puter-male-us',
+        'international-female': 'puter-female-us',
+        'international-male': 'puter-male-us',
+      };
+
       // @ts-ignore
       const audio = await puter.ai.txt2speech(text, {
-        voice: selectedVoice.id,
+        voice: voiceMap[selectedVoice.id] || 'puter-female-us',
       });
 
       audio.onended = () => {
