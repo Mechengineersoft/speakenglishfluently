@@ -57,13 +57,54 @@ const Index = () => {
       const availableVoices = window.speechSynthesis.getVoices();
       
       let voice = null;
-      // Try to match accent
+      const gender = selectedVoice?.gender;
+
+      const findBestVoice = (langCodes: string[], keywords: string[]) => {
+        // First try to find a voice that matches both accent and gender
+        let match = availableVoices.find(v => {
+          const isLangMatch = langCodes.some(code => v.lang.includes(code)) || 
+                             keywords.some(k => v.name.includes(k));
+          if (!isLangMatch) return false;
+
+          const nameLower = v.name.toLowerCase();
+          if (gender === 'male') {
+            return nameLower.includes('male') || 
+                   nameLower.includes('david') || 
+                   nameLower.includes('mark') || 
+                   nameLower.includes('james') ||
+                   nameLower.includes('ravi') ||
+                   nameLower.includes('george');
+          } else if (gender === 'female') {
+            return nameLower.includes('female') || 
+                   nameLower.includes('zira') || 
+                   nameLower.includes('susan') || 
+                   nameLower.includes('heera') ||
+                   nameLower.includes('hazel');
+          }
+          return false;
+        });
+
+        // If no gender-specific match, fall back to any voice with correct accent
+        if (!match) {
+          match = availableVoices.find(v => 
+            langCodes.some(code => v.lang.includes(code)) || 
+            keywords.some(k => v.name.includes(k))
+          );
+        }
+        
+        return match;
+      };
+
+      // Try to match accent and gender
       if (selectedVoice?.accent === 'indian') {
-        voice = availableVoices.find(v => v.lang.includes('IN') || v.name.includes('India'));
+        voice = findBestVoice(['IN'], ['India']);
       } else if (selectedVoice?.accent === 'british') {
-        voice = availableVoices.find(v => v.lang.includes('GB') || v.name.includes('UK'));
+        voice = findBestVoice(['GB'], ['UK']);
       } else if (selectedVoice?.accent === 'american') {
-        voice = availableVoices.find(v => v.lang.includes('US'));
+        voice = findBestVoice(['US'], ['United States']);
+      } else {
+        // Default/International
+        voice = findBestVoice(['US', 'GB'], ['English']);
       }
       
       if (voice) {
