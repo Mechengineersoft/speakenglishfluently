@@ -53,6 +53,18 @@ const Index = () => {
 
     try {
       // @ts-ignore
+      if (typeof puter === 'undefined' || !puter.ai || !puter.ai.txt2speech) {
+        console.error('Puter.js is not loaded yet.');
+        toast({
+          title: "Audio Error",
+          description: "The audio service is not ready yet. Please try again in a moment.",
+          variant: "destructive",
+        });
+        setPlayingMessageId(null);
+        return;
+      }
+
+      // @ts-ignore
       const audio = await puter.ai.txt2speech(text, {
         voice: selectedVoice.id,
       });
