@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { VoiceSelector } from '@/components/VoiceSelector';
 import { ChatInterface } from '@/components/ChatInterface';
@@ -9,6 +9,16 @@ import { ArrowRight, Globe2, Mic, Languages, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://js.puter.com/v2/';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
   const [selectedVoice, setSelectedVoice] = useState<VoiceOption | null>(null);
   const [selectedLanguage, setSelectedLanguage] = useState<LanguageType>('english');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,44 +48,23 @@ const Index = () => {
 
   const playAudioForMessage = useCallback(async (messageId: string, text: string) => {
     if (!selectedVoice) return;
-    
+
     setPlayingMessageId(messageId);
-    
+
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            text,
-            voiceKey: selectedVoice.id,
-          }),
-        }
-      );
+      // @ts-ignore
+      const audio = await puter.ai.txt2speech(text, {
+        voice: selectedVoice.id,
+      });
 
-      if (!response.ok) {
-        throw new Error('TTS request failed');
-      }
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      
       audio.onended = () => {
         setPlayingMessageId(null);
-        URL.revokeObjectURL(audioUrl);
       };
-      
+
       audio.onerror = () => {
         setPlayingMessageId(null);
-        URL.revokeObjectURL(audioUrl);
       };
-      
+
       await audio.play();
     } catch (error) {
       console.error('Error playing audio:', error);
