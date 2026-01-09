@@ -3,11 +3,13 @@ import { Send, Mic, MicOff, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { LanguageType } from '@/types/voice';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isLoading?: boolean;
   placeholder?: string;
+  language?: LanguageType;
 }
 
 // Web Speech API types
@@ -54,7 +56,7 @@ declare global {
   }
 }
 
-export function ChatInput({ onSendMessage, isLoading, placeholder = "Type your message..." }: ChatInputProps) {
+export function ChatInput({ onSendMessage, isLoading, placeholder = "Type your message...", language = 'english' }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
@@ -88,7 +90,15 @@ export function ChatInput({ onSendMessage, isLoading, placeholder = "Type your m
     
     recognition.continuous = false;
     recognition.interimResults = true;
-    recognition.lang = 'en-US';
+    
+    // Set language based on selection
+    if (language === 'hindi') {
+      recognition.lang = 'hi-IN';
+    } else if (language === 'urdu') {
+      recognition.lang = 'ur-PK'; // or ur-IN, ur-PK is standard for Urdu
+    } else {
+      recognition.lang = 'en-US';
+    }
 
     finalTranscriptRef.current = '';
 

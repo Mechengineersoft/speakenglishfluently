@@ -51,16 +51,48 @@ const Index = () => {
 
     setPlayingMessageId(messageId);
 
+    const fallbackToBrowserTTS = () => {
+      console.log('Falling back to browser TTS');
+      const utterance = new SpeechSynthesisUtterance(text);
+      const availableVoices = window.speechSynthesis.getVoices();
+      
+      let voice = null;
+      // Try to match accent
+      if (selectedVoice?.accent === 'indian') {
+        voice = availableVoices.find(v => v.lang.includes('IN') || v.name.includes('India'));
+      } else if (selectedVoice?.accent === 'british') {
+        voice = availableVoices.find(v => v.lang.includes('GB') || v.name.includes('UK'));
+      } else if (selectedVoice?.accent === 'american') {
+        voice = availableVoices.find(v => v.lang.includes('US'));
+      }
+      
+      if (voice) {
+        utterance.voice = voice;
+      }
+      
+      utterance.onend = () => {
+        setPlayingMessageId(null);
+      };
+      
+      utterance.onerror = (e) => {
+        console.error('Browser TTS error:', e);
+        setPlayingMessageId(null);
+        toast({
+          title: "Audio Playback Error",
+          description: "Could not play audio using browser text-to-speech.",
+          variant: "destructive",
+        });
+      };
+      
+      window.speechSynthesis.cancel(); // Stop any current speech
+      window.speechSynthesis.speak(utterance);
+    };
+
     try {
       // @ts-ignore
       if (typeof puter === 'undefined' || !puter.ai || !puter.ai.txt2speech) {
-        console.error('Puter.js is not loaded yet.');
-        toast({
-          title: "Audio Error",
-          description: "The audio service is not ready yet. Please try again in a moment.",
-          variant: "destructive",
-        });
-        setPlayingMessageId(null);
+        console.warn('Puter.js is not loaded yet or unavailable. Using fallback.');
+        fallbackToBrowserTTS();
         return;
       }
 
@@ -76,23 +108,31 @@ const Index = () => {
         'international-male': 'puter-male-us',
       };
 
+      const voiceId = voiceMap[selectedVoice.id] || 'puter-female-us';
+      console.log(`[playAudioForMessage] Requesting audio with voice: ${voiceId} for text: "${text}"`);
+
       // @ts-ignore
       const audio = await puter.ai.txt2speech(text, {
-        voice: voiceMap[selectedVoice.id] || 'puter-female-us',
+        voice: voiceId,
       });
 
+      console.log('[playAudioForMessage] Audio object received:', audio);
+
       audio.onended = () => {
+        console.log('[playAudioForMessage] Audio playback finished.');
         setPlayingMessageId(null);
       };
 
-      audio.onerror = () => {
-        setPlayingMessageId(null);
+      audio.onerror = (e: any) => {
+        console.error('[playAudioForMessage] Audio playback error:', e);
+        fallbackToBrowserTTS();
       };
 
       await audio.play();
+      console.log('[playAudioForMessage] audio.play() called.');
     } catch (error) {
       console.error('Error playing audio:', error);
-      setPlayingMessageId(null);
+      fallbackToBrowserTTS();
     }
   }, [selectedVoice]);
 

@@ -152,6 +152,7 @@ export function ChatInterface({
             onSendMessage={onSendMessage}
             isLoading={isLoading}
             placeholder={getPlaceholder()}
+            language={selectedLanguage}
           />
         </div>
       </div>
